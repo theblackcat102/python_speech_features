@@ -151,7 +151,7 @@ def get_filterbanks(nfilt=20,nfft=512,samplerate=16000,lowfreq=0,highfreq=None, 
         #  from Hz to fft bin number
         bin = numpy.floor((nfft+1)*mel2hz(melpoints)/samplerate)
     else:
-        hzpoints = numpy.linspace(lowfreq,lowfreq,nfilt+2)
+        hzpoints = numpy.linspace(lowfreq,highfreq,nfilt+2)
         bin = numpy.floor((nfft+1)*hzpoints/samplerate)
 
     fbank = numpy.zeros([nfilt,nfft//2+1])
