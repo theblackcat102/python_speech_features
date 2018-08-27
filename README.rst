@@ -21,7 +21,7 @@ This `project is on pypi <https://pypi.python.org/pypi/python_speech_features>`_
 
 To install from pypi:: 
 
-	pip install python_speech_features
+	pip install git+git@github.com:theblackcat102/python_speech_features.git#egg=python_speech_features
 
 	
 From this repository::
