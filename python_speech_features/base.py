@@ -33,7 +33,7 @@ def mfcc(signal,samplerate=16000,winlen=0.025,winstep=0.01,numcep=13,
     return feat
 
 def fbank(signal,samplerate=16000,winlen=0.025,winstep=0.01,
-          nfilt=26,nfft=512,lowfreq=0,highfreq=None,preemph=0.97,
+          nfilt=26,nfft=512,lowfreq=0,highfreq=None,preemph=0.97, use_mel=True,
           winfunc=lambda x:numpy.ones((x,))):
     """Compute Mel-filterbank energy features from an audio signal.
 
@@ -57,7 +57,7 @@ def fbank(signal,samplerate=16000,winlen=0.025,winstep=0.01,
     energy = numpy.sum(pspec,1) # this stores the total energy in each frame
     energy = numpy.where(energy == 0,numpy.finfo(float).eps,energy) # if energy is zero, we get problems with log
 
-    fb = get_filterbanks(nfilt,nfft,samplerate,lowfreq,highfreq)
+    fb = get_filterbanks(nfilt,nfft,samplerate,lowfreq,highfreq,use_mel=use_mel)
     feat = numpy.dot(pspec,fb.T) # compute the filterbank energies
     feat = numpy.where(feat == 0,numpy.finfo(float).eps,feat) # if feat is zero, we get problems with log
 
@@ -80,8 +80,8 @@ def logfbank(signal,samplerate=16000,winlen=0.025,winstep=0.01,
     :param winfunc: the analysis window to apply to each frame. By default no window is applied. You can use numpy window functions here e.g. winfunc=numpy.hamming
     :returns: A numpy array of size (NUMFRAMES by nfilt) containing features. Each row holds 1 feature vector.
     """
-    feat,energy = fbank(signal,samplerate,winlen,winstep,nfilt,nfft,lowfreq,highfreq,preemph,winfunc)
-    return numpy.log(feat)
+    feat, energy = fbank(signal,samplerate,winlen,winstep,nfilt,nfft,lowfreq,highfreq,preemph,winfunc)
+    return numpy.log(feat), energy
 
 def ssc(signal,samplerate=16000,winlen=0.025,winstep=0.01,
         nfilt=26,nfft=512,lowfreq=0,highfreq=None,preemph=0.97,
@@ -128,7 +128,7 @@ def mel2hz(mel):
     """
     return 700*(10**(mel/2595.0)-1)
 
-def get_filterbanks(nfilt=20,nfft=512,samplerate=16000,lowfreq=0,highfreq=None):
+def get_filterbanks(nfilt=20,nfft=512,samplerate=16000,lowfreq=0,highfreq=None, use_mel=True):
     """Compute a Mel-filterbank. The filters are stored in the rows, the columns correspond
     to fft bins. The filters are returned as an array of size nfilt * (nfft/2 + 1)
 
@@ -143,12 +143,16 @@ def get_filterbanks(nfilt=20,nfft=512,samplerate=16000,lowfreq=0,highfreq=None):
     assert highfreq <= samplerate/2, "highfreq is greater than samplerate/2"
 
     # compute points evenly spaced in mels
-    lowmel = hz2mel(lowfreq)
-    highmel = hz2mel(highfreq)
-    melpoints = numpy.linspace(lowmel,highmel,nfilt+2)
-    # our points are in Hz, but we use fft bins, so we have to convert
-    #  from Hz to fft bin number
-    bin = numpy.floor((nfft+1)*mel2hz(melpoints)/samplerate)
+    if use_mel:
+        lowmel = hz2mel(lowfreq)
+        highmel = hz2mel(highfreq)
+        melpoints = numpy.linspace(lowmel,highmel,nfilt+2)
+        # our points are in Hz, but we use fft bins, so we have to convert
+        #  from Hz to fft bin number
+        bin = numpy.floor((nfft+1)*mel2hz(melpoints)/samplerate)
+    else:
+        hzpoints = numpy.linspace(lowmel,highmel,nfilt+2)
+        bin = numpy.floor((nfft+1)*hzpoints/samplerate)
 
     fbank = numpy.zeros([nfilt,nfft//2+1])
     for j in range(0,nfilt):
